@@ -4,14 +4,10 @@ import (
 	"bufio"
 	"fmt"
 	"os"
-	"strconv"
 	"unicode"
-)
 
-type Cordinates struct {
-	X int
-	Y int
-}
+	helpers "day3/helpers"
+)
 
 // exclude the full stop
 const unicodeExclusion int = 46
@@ -22,10 +18,9 @@ func main() {
 	fileLocation := os.Getenv("DAY3_FILE")
 	matrixDepth := 0
 	matrix := make([][]rune, 0)
-	sum := 0
 
 	if fileLocation == "" {
-		fallback := "day-3/day3.txt"
+		fallback := "day3.txt"
 		fmt.Printf("Falling back to %v as james is a dummy and didnt give me a file \n", fallback)
 		fileLocation = fallback
 	}
@@ -43,20 +38,26 @@ func main() {
 
 	for scanner.Scan() {
 		// Load up the 2d matrix
-		entry := stringToArray(scanner.Text())
+		entry := helpers.StringToArray(scanner.Text())
 		tmp := make([]rune, 0)
 		tmp = append(tmp, entry...)
 		matrix = append(matrix, tmp)
 		matrixDepth++
 	}
 
+	partOne(matrix, matrixDepth)
+}
+
+func partOne(matrix [][]rune, matrixDepth int) {
+
+	sum := 0
 	// Iterate across then down
 	for i, row := range matrix {
 
 		// Lookahead pointer
 		lookAheadPointer := 0
 		for j, val := range row {
-			cordsToSearch := []Cordinates{}
+			cordsToSearch := []helpers.Cordinates{}
 			shoudSum := false
 			if j < lookAheadPointer {
 				continue
@@ -64,8 +65,8 @@ func main() {
 
 			lookAheadPointer = j
 
-			startWordCords := Cordinates{}
-			endWordCords := Cordinates{}
+			startWordCords := helpers.Cordinates{}
+			endWordCords := helpers.Cordinates{}
 			if unicode.IsNumber(val) {
 
 				// Find the last Element that is a letter
@@ -73,18 +74,18 @@ func main() {
 					lookAheadPointer++
 				}
 
-				startWordCords = Cordinates{
+				startWordCords = helpers.Cordinates{
 					X: j,
 					Y: i,
 				}
-				endWordCords = Cordinates{
+				endWordCords = helpers.Cordinates{
 					// As the pointer stops at the first occurance of a non number, we need to move it back 1
 					// to the last occurance
 					X: lookAheadPointer - 1,
 					Y: i,
 				}
 
-				cordsToSearch = calculatePerimterCordinates(startWordCords, endWordCords)
+				cordsToSearch = helpers.CalculatePerimterCordinates(startWordCords, endWordCords)
 
 			}
 
@@ -111,7 +112,7 @@ func main() {
 			if shoudSum {
 
 				fmt.Println(row[startWordCords.X:endWordCords.X])
-				sum = sum + extractWordValueFromCoords(row[startWordCords.X:endWordCords.X+1])
+				sum = sum + helpers.ExtractWordValueFromCoords(row[startWordCords.X:endWordCords.X+1])
 				shoudSum = false
 			}
 
@@ -121,86 +122,36 @@ func main() {
 	fmt.Println(sum)
 }
 
-func extractWordValueFromCoords(matrix []rune) int {
+// func partTwo(matrix [][]rune, matrixDepth int) {
 
-	str := ""
-	for _, v := range matrix {
-		fmt.Println(string(v))
-		str = fmt.Sprintf("%v%v", str, string(v))
-	}
+// 	sum := 0
+// 	// Iterate across then down
+// 	for i, row := range matrix {
+// 		for j, val := range row {
+// 			cordsToSearch := []helpers.Cordinates{}
 
-	fmt.Println(str)
+// 			if string(val) == "*" {
 
-	val, err := strconv.Atoi(str)
+// 				wordCords := helpers.Cordinates{
+// 					X: j,
+// 					Y: i,
+// 				}
+// 				cordsToSearch = helpers.CalculatePerimterCordinates(wordCords, wordCords)
+// 			}
+// 			//
+// 			for i, cord := range cordsToSearch {
 
-	if err != nil {
-		fmt.Println(err)
-		return -100000
-	}
+// 				if cord.X < 0 || cord.Y < 0 || cord.Y >= matrixDepth || cord.X >= len(row) {
+// 					continue
+// 				}
+// 				// Fan out and find the the end of the coord
+// 				if unicode.IsDigit(matrix[cord.Y][cord.X]) {
+// 					leftPointer := cord.X
+// 					rightPointer := cord.Y
 
-	fmt.Println("Found: ", val)
+// 				}
+// 			}
+// 		}
+// 	}
 
-	return val
-}
-
-func stringToArray(input string) []rune {
-	runes := make([]rune, len(input))
-
-	for j, char := range input {
-
-		runes[j] = char
-
-	}
-
-	return runes
-}
-
-// We assume its always left to right, not diagonal
-func calculatePerimterCordinates(startIndex, endIndex Cordinates) []Cordinates {
-	combinedCordinates := []Cordinates{}
-	leftMostCords := []Cordinates{}
-	rightMostCords := []Cordinates{}
-
-	//Calculate the left and right most cords.
-	// Index 1 will always be the directly left or right.
-	for i := -1; i < 2; i++ {
-		lCoord := Cordinates{
-			X: startIndex.X - 1,
-			Y: startIndex.Y - i,
-		}
-
-		rCoord := Cordinates{
-			X: endIndex.X + 1,
-			Y: startIndex.Y - i,
-		}
-
-		leftMostCords = append(leftMostCords, lCoord)
-		rightMostCords = append(rightMostCords, rCoord)
-
-	}
-
-	// Above the line
-	for i := leftMostCords[1].X; i <= rightMostCords[1].X; i++ {
-		c := Cordinates{
-			X: i,
-			Y: startIndex.Y - 1,
-		}
-
-		combinedCordinates = append(combinedCordinates, c)
-	}
-
-	// Below the line
-	for i := leftMostCords[1].X; i <= rightMostCords[1].X; i++ {
-		c := Cordinates{
-			X: i,
-			Y: startIndex.Y + 1,
-		}
-
-		combinedCordinates = append(combinedCordinates, c)
-	}
-
-	combinedCordinates = append(combinedCordinates, leftMostCords...)
-	combinedCordinates = append(combinedCordinates, rightMostCords...)
-
-	return combinedCordinates
-}
+// }
