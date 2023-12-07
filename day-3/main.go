@@ -3,7 +3,9 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"log"
 	"os"
+	"strconv"
 	"unicode"
 
 	helpers "day3/helpers"
@@ -11,6 +13,7 @@ import (
 
 // exclude the full stop
 const unicodeExclusion int = 46
+const unicodeAsterix int = 42
 
 //TODO: Part 2
 
@@ -45,113 +48,137 @@ func main() {
 		matrixDepth++
 	}
 
-	partOne(matrix, matrixDepth)
+	x, y := matrixParser(matrix)
+	p1 := partOneRefactored(x, y)
+	p2 := partTwoRefactored(x, y)
+	fmt.Println("Part one answer ", p1)
+	fmt.Println("Part Two Answer ", p2)
+
 }
 
-func partOne(matrix [][]rune, matrixDepth int) {
-
-	sum := 0
-	// Iterate across then down
+func matrixParser(matrix [][]rune) (numberCordinates []helpers.NumberCoordinates, specialCharCoordinates []helpers.Coordinates) {
+	numberCordinates = []helpers.NumberCoordinates{}
+	specialCharCoordinates = []helpers.Coordinates{}
 	for i, row := range matrix {
 
-		// Lookahead pointer
-		lookAheadPointer := 0
+		wCord := helpers.NumberCoordinates{
+			StartIndexXAxis: -1,
+			EndIndexXAxis:   -1,
+		}
+
 		for j, val := range row {
-			cordsToSearch := []helpers.Cordinates{}
-			shoudSum := false
-			if j < lookAheadPointer {
-				continue
+
+			// We have a open cord and need to close it
+			if (wCord.StartIndexXAxis != -1 && !unicode.IsNumber(val)) || (wCord.StartIndexXAxis != -1 && j == len(row)-1) {
+
+				if j == len(row)-1 && unicode.IsNumber(val) {
+
+					val, err := strconv.Atoi(fmt.Sprintf("%d%s", wCord.Value, string(val)))
+					if err != nil {
+						log.Fatal("Parsing error ", err)
+					}
+					wCord.Value = val
+
+				}
+				fmt.Println(wCord.Value)
+				numberCordinates = append(numberCordinates, wCord)
+
+				wCord = helpers.NumberCoordinates{
+					StartIndexXAxis: -1,
+					EndIndexXAxis:   -1,
+					YAxis:           -1,
+					Value:           0,
+				}
 			}
 
-			lookAheadPointer = j
+			if !unicode.IsNumber(val) && int(val) != unicodeExclusion {
+				cord := helpers.Coordinates{
+					X:     j,
+					Y:     i,
+					Value: val,
+				}
 
-			startWordCords := helpers.Cordinates{}
-			endWordCords := helpers.Cordinates{}
+				specialCharCoordinates = append(specialCharCoordinates, cord)
+
+			}
+
 			if unicode.IsNumber(val) {
-
-				// Find the last Element that is a letter
-				for lookAheadPointer < len(row) && unicode.IsNumber(matrix[i][lookAheadPointer]) {
-					lookAheadPointer++
+				if wCord.StartIndexXAxis == -1 {
+					wCord.StartIndexXAxis = j
+					wCord.YAxis = i
 				}
 
-				startWordCords = helpers.Cordinates{
-					X: j,
-					Y: i,
+				val, err := strconv.Atoi(fmt.Sprintf("%d%s", wCord.Value, string(val)))
+				if err != nil {
+					log.Fatal("Parsing error ", err)
 				}
-				endWordCords = helpers.Cordinates{
-					// As the pointer stops at the first occurance of a non number, we need to move it back 1
-					// to the last occurance
-					X: lookAheadPointer - 1,
-					Y: i,
-				}
-
-				cordsToSearch = helpers.CalculatePerimterCordinates(startWordCords, endWordCords)
-
-			}
-
-			for i, cord := range cordsToSearch {
-				fmt.Println(i)
-
-				// We know we should sum, so we will
-				if shoudSum {
-					break
-				}
-
-				// Prevent going out of bounds on either side of the matrix
-				if cord.X < 0 || cord.Y < 0 || cord.Y >= matrixDepth || cord.X >= len(row) {
-					continue
-				}
-
-				fmt.Println(cord)
-				if !unicode.IsDigit(matrix[cord.Y][cord.X]) && int(matrix[cord.Y][cord.X]) != unicodeExclusion {
-					shoudSum = true
-				}
-
-			}
-
-			if shoudSum {
-
-				fmt.Println(row[startWordCords.X:endWordCords.X])
-				sum = sum + helpers.ExtractWordValueFromCoords(row[startWordCords.X:endWordCords.X+1])
-				shoudSum = false
+				wCord.Value = val
+				wCord.EndIndexXAxis = j
 			}
 
 		}
 	}
 
-	fmt.Println(sum)
+	fmt.Printf("Returing %v number cordinates and %v special character cordinates \n", len(numberCordinates), len(specialCharCoordinates))
+	return numberCordinates, specialCharCoordinates
 }
 
-// func partTwo(matrix [][]rune, matrixDepth int) {
+func partOneRefactored(numberCordinates []helpers.NumberCoordinates, specialCharCoordinates []helpers.Coordinates) int {
 
-// 	sum := 0
-// 	// Iterate across then down
-// 	for i, row := range matrix {
-// 		for j, val := range row {
-// 			cordsToSearch := []helpers.Cordinates{}
+	sum := 0
+	for _, specialCord := range specialCharCoordinates {
 
-// 			if string(val) == "*" {
+		cordsToSearch := helpers.CalculatePerimterCoordinates(specialCord)
 
-// 				wordCords := helpers.Cordinates{
-// 					X: j,
-// 					Y: i,
-// 				}
-// 				cordsToSearch = helpers.CalculatePerimterCordinates(wordCords, wordCords)
-// 			}
-// 			//
-// 			for i, cord := range cordsToSearch {
+		for _, numberCord := range numberCordinates {
+			found := false
+			for _, searchCord := range cordsToSearch {
+				if searchCord.Y == numberCord.YAxis {
+					if searchCord.X >= numberCord.StartIndexXAxis && searchCord.X <= numberCord.EndIndexXAxis && !found {
+						sum = sum + numberCord.Value
+						found = true
+					}
+				}
+			}
+		}
 
-// 				if cord.X < 0 || cord.Y < 0 || cord.Y >= matrixDepth || cord.X >= len(row) {
-// 					continue
-// 				}
-// 				// Fan out and find the the end of the coord
-// 				if unicode.IsDigit(matrix[cord.Y][cord.X]) {
-// 					leftPointer := cord.X
-// 					rightPointer := cord.Y
+	}
 
-// 				}
-// 			}
-// 		}
-// 	}
+	return sum
 
-// }
+}
+
+func partTwoRefactored(numberCordinates []helpers.NumberCoordinates, specialCharCoordinates []helpers.Coordinates) int {
+	sum := 0
+	for _, specialCord := range specialCharCoordinates {
+
+		if int(specialCord.Value) != unicodeAsterix {
+			continue
+		}
+		foundVal := 0
+		foundVals := []int{}
+		cordsToSearch := helpers.CalculatePerimterCoordinates(specialCord)
+		for _, numberCord := range numberCordinates {
+			for _, searchCord := range cordsToSearch {
+
+				if searchCord.Y == numberCord.YAxis {
+
+					if searchCord.X >= numberCord.StartIndexXAxis && searchCord.X <= numberCord.EndIndexXAxis && numberCord.Value != foundVal {
+
+						foundVals = append(foundVals, numberCord.Value)
+						break
+
+					}
+
+				}
+			}
+		}
+
+		if len(foundVals) == 2 {
+			sum = sum + (foundVals[0] * foundVals[1])
+		}
+	}
+
+	return sum
+
+}

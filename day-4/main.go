@@ -83,7 +83,7 @@ func calculateCardScore(scratchCards []scratchCard) int {
 		doubler := false
 		sum := 0
 		matchingNumbers := 0
-		fmt.Println("Checking card: ", card.Number)
+		// fmt.Println("Checking card: ", card.Number)
 		for _, i := range card.UserNumbers {
 
 			for _, j := range card.WinningNumbers {
@@ -123,7 +123,6 @@ func calculateCardReturns(scratchCards, oringalSet []scratchCard) []scratchCard 
 		}
 
 		for i := 0; i < counter; i++ {
-			// fmt.Println("adding card: ", oringalSet[card.Number+i], "from card:", card.Number)
 			returnCards = append(returnCards, oringalSet[card.Number+i])
 		}
 	}

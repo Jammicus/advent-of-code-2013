@@ -1,56 +1,60 @@
 package helpers
 
-type Cordinates struct {
-	X int
-	Y int
+type Coordinates struct {
+	X     int
+	Y     int
+	Value rune
+}
+
+type NumberCoordinates struct {
+	StartIndexXAxis int
+	EndIndexXAxis   int
+	YAxis           int
+	Value           int
 }
 
 // We assume its always left to right, not diagonal
-func CalculatePerimterCordinates(startIndex, endIndex Cordinates) []Cordinates {
-	combinedCordinates := []Cordinates{}
-	leftMostCords := []Cordinates{}
-	rightMostCords := []Cordinates{}
+func CalculatePerimterCoordinates(coord Coordinates) []Coordinates {
+	combinedCoordinates := []Coordinates{}
+	leftMostCoords := []Coordinates{}
+	rightMostCoords := []Coordinates{}
 
 	// Calculate the left and right most cords.
 	// Index 1 will always be the directly left or right.
 	for i := -1; i < 2; i++ {
-		lCoord := Cordinates{
-			X: startIndex.X - 1,
-			Y: startIndex.Y - i,
+		lCoord := Coordinates{
+			X: coord.X - 1,
+			Y: coord.Y - i,
 		}
 
-		rCoord := Cordinates{
-			X: endIndex.X + 1,
-			Y: startIndex.Y - i,
+		rCoord := Coordinates{
+			X: coord.X + 1,
+			Y: coord.Y - i,
 		}
 
-		leftMostCords = append(leftMostCords, lCoord)
-		rightMostCords = append(rightMostCords, rCoord)
+		combinedCoordinates = append(combinedCoordinates, lCoord)
+		combinedCoordinates = append(combinedCoordinates, rCoord)
 
 	}
 
 	// Above the line
-	for i := leftMostCords[1].X; i <= rightMostCords[1].X; i++ {
-		c := Cordinates{
-			X: i,
-			Y: startIndex.Y - 1,
-		}
-
-		combinedCordinates = append(combinedCordinates, c)
+	c := Coordinates{
+		X: coord.X,
+		Y: coord.Y - 1,
 	}
+
+	combinedCoordinates = append(combinedCoordinates, c)
 
 	// Below the line
-	for i := leftMostCords[1].X; i <= rightMostCords[1].X; i++ {
-		c := Cordinates{
-			X: i,
-			Y: startIndex.Y + 1,
-		}
-
-		combinedCordinates = append(combinedCordinates, c)
+	c = Coordinates{
+		X: coord.X,
+		Y: coord.Y + 1,
 	}
 
-	combinedCordinates = append(combinedCordinates, leftMostCords...)
-	combinedCordinates = append(combinedCordinates, rightMostCords...)
+	combinedCoordinates = append(combinedCoordinates, c)
 
-	return combinedCordinates
+	combinedCoordinates = append(combinedCoordinates, leftMostCoords...)
+	combinedCoordinates = append(combinedCoordinates, rightMostCoords...)
+
+	return combinedCoordinates
 }
